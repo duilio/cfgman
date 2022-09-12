@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# Lint all files in the repo.
+#
+set -xeuo pipefail
+
+ROOT="$(dirname "$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )")"
+
+poetry run pre-commit run --all-files
+poetry run mypy "${ROOT}"

@@ -1,0 +1,38 @@
+# Python
+*.py[cod]
+__pycache__/
+
+# Javascript
+node_modules/
+
+# Editors and backups
+.project
+.vscode/
+.idea/
+.diary/
+TODO
+*~
+\#*#
+.#*
+*.bak
+.dir-locals.el
+*.code-workspace
+
+# Mac
+.DS_Store
+
+# Zips
+*.tar.gz
+*.swp
+*.zip
+
+# This is the customized part for the app
+db.sqlite3
+.venv/
+staticfiles/
+mediafiles/
+test_output/
+*.egg-info/
+dist/
+.env
+tmp/
