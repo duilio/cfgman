@@ -6,4 +6,4 @@ set -euo pipefail
 
 ROOT="$(dirname "$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )")"
 
-(cd "$ROOT"; poetry run pytest)
+(cd "$ROOT"; poetry run pytest "$@")

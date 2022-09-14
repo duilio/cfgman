@@ -12,20 +12,21 @@ from configman.errors import (
     UnsupportedFileType,
     ValidationError,
 )
+from configman.tree import envelop_subpath
 from configman.types import FileType
 
 try:
     import yaml
 
     YAML_EXISTS = True
-except KeyError:
+except KeyError:  # pragma: no cover
     YAML_EXISTS = False
 
 try:
     import tomli
 
     TOML_EXISTS = True
-except KeyError:
+except KeyError:  # pragma: no cover
     TOML_EXISTS = False
 
 
@@ -96,7 +97,7 @@ def load_file(
     if isinstance(subpath, str):
         subpath = subpath.split(".")
 
-    return [_apply_subpath(subpath, x) for x in contents]
+    return [envelop_subpath(x, subpath) for x in contents]
 
 
 def file_loader(
@@ -125,12 +126,6 @@ def file_loader(
         return wrapped_func
     else:
         return lambda x: wrapped_func(cls)
-
-
-def _apply_subpath(subpath: Sequence[str], content: dict[str, Any]) -> dict[str, Any]:
-    for k in reversed(subpath):
-        content = {k: content}
-    return content
 
 
 def _load_single_file(

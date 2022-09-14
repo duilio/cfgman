@@ -1,15 +1,14 @@
 from collections.abc import Callable, Iterable, Iterator, Mapping
-from copy import deepcopy
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import MISSING, dataclass, fields, is_dataclass
 from typing import Any, TypeVar, cast
 
 from apischema import deserialize
 from typing_extensions import dataclass_transform
 
 from .loaders import env_loader, file_loader  # noqa: F401
+from .tree import Node, NodePath, copy, ensure_path_prefix
 
 _T = TypeVar("_T")
-NodePath = tuple[str, ...]
 
 
 register = set[type]()
@@ -107,57 +106,79 @@ def _merge_layers(*layers: dict[str, Any]) -> dict[str, Any]:
     - an item is replaced if it is not a dict or a list.
     - dict are merged recusively.
     - lists are joined.
+    - nodes containing a MISSING value are pruned.
     """
     head, *tail = layers
-    current = deepcopy(head)
+    current = copy(head)
 
     for layer in tail:
         for node_path, node_value in _visit_dict(layer):
             _merge_node_path(current, node_path, node_value)
 
+    _prune_missing_inplace(current)
     return current
 
 
-def _visit_dict(root: dict[str, Any]) -> Iterator[tuple[NodePath, Any]]:
+def _prune_missing_inplace(d: dict[str, Any]) -> None:
+    """Prune all nodes containing a MISSING values."""
+
+    to_del = []
+
+    for k, v in d.items():
+        if v is MISSING:
+            to_del.append(k)
+        elif isinstance(v, Mapping) and v:
+            _prune_missing_inplace(v)
+
+    for k in to_del:
+        del d[k]
+
+
+def _visit_dict(root: Node) -> Iterator[tuple[list[str], Any]]:
     """Visit the tree of a dict and yields all node paths.
 
-    Each nested dictionaries are visited recursively.
+    Each nested dictionary is visited recursively.
     """
     for key, value in root.items():
         if isinstance(value, dict):
-            value = cast(dict[str, Any], value)
+            value = cast(Node, value)
             for node_path, node_value in _visit_dict(value):
-                yield (key,) + node_path, node_value
+                yield [key] + node_path, node_value
         else:
-            yield (key,), value
+            yield [key], value
 
 
-def _merge_node_path(tree: dict[str, Any], path: NodePath, value: Any) -> None:
+def _merge_node_path(tree: Node, path: NodePath, new_value: Any) -> None:
     """Merge the value of a node path with the new value.
 
-    The values is overridden if it is not a list, otherwise the two lists are joined.
+    The values is overridden if it is not a list, otherwise the two lists are
+    concatenated.
     """
-    node = tree
-    *partial_path, last_key = path
-    for key in partial_path:
-        node = node.setdefault(key, {})
+    node, key = ensure_path_prefix(tree, path)
 
-    if isinstance(value, list):
-        current_value = node.setdefault(last_key, [])
+    # don't make any change if the new value is missing
+    if new_value is MISSING:
+        return
+
+    if isinstance(new_value, list):
+        current_value = node.get(key, MISSING)
+        if current_value is MISSING:
+            current_value = node[key] = []
+
         if not isinstance(current_value, list):
             raise TypeError(
                 f"Setting {'.'.join(path)} has mixed type 'list' and non-'list'."
             )
         else:
-            current_value.extend(value)
+            current_value.extend(new_value)
     else:
-        node[last_key] = value
+        node[key] = new_value
 
 
 def get_default_config(cls: type[_T]) -> _T:
     """Return the default configuration for the given config class.
 
-    Raises KeyError if the class is either a non-registered configclass or it
+    Raise KeyError if the class is either a non-registered configclass or it
     has not been loaded yet.
     """
     return cast(_T, defaults[cls])
@@ -166,6 +187,6 @@ def get_default_config(cls: type[_T]) -> _T:
 def reset():
     """Reset the default configclasses.
 
-    This is a convenience function for tests.
+    This is an utility function for tests.
     """
     defaults.clear()

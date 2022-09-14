@@ -1,6 +1,8 @@
+from dataclasses import asdict
+
 from apischema import serialize
 
-from configman import configclass, get_default_config, load_config
+from configman import MISSING, configclass, get_default_config, load_config
 
 
 @configclass
@@ -14,6 +16,12 @@ class Config:
     web: WebServerConfig
     name: str
     values: list[int] | None = None
+
+
+@configclass
+class ConfigWithDefaults:
+    name: str = "default"
+    number: int = 10
 
 
 def test_nested_config():
@@ -71,3 +79,28 @@ def test_get_default():
 
     config = get_default_config(Config)
     assert config.values is None
+
+
+def test_missing():
+    config = load_config(
+        Config,
+        {"name": "foo", "values": [1], "web": {"host": "localhost", "port": 80}},
+        {"name": MISSING, "web": MISSING},
+    )
+
+    assert asdict(config) == {
+        "name": "foo",
+        "values": [1],
+        "web": {"host": "localhost", "port": 80},
+    }
+
+
+def test_missing_with_defaults():
+    config_with_defaults = load_config(
+        ConfigWithDefaults, {"name": MISSING, "number": 20}
+    )
+
+    assert asdict(config_with_defaults) == {
+        "name": "default",
+        "number": 20,
+    }

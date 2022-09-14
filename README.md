@@ -6,7 +6,7 @@ A configuration manager for Python application.
 
 - Configure from files (yaml, toml, json).
 - Environment variables.
-- Integrate with argument parser.
+- Custom variables (e.g. command line arguments).
 - Types.
 - Custom parsers and validations.
 - Context-aware changes (for a/b testing).

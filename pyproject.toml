@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "configman"
 version = "0.1.0"
-description = ""
+description = "Configuration manager made easy."
 authors = ["Maurizio Sambati <maurizio@skicelab.com>"]
 
 [tool.poetry.dependencies]
@@ -19,6 +19,8 @@ flake8 = "^5.0.4"
 black = "^22.6.0"
 pre-commit = "^2.20.0"
 ipython = "^8.4.0"
+pytest-mock = "^3.8.2"
+pytest-cov = "^3.0.0"
 
 [tool.poetry.extras]
 yaml = ["PyYAML"]
@@ -28,6 +30,19 @@ all = ["PyYAML", "tomli"]
 [tool.isort]
 known_first_party = "configman"
 profile = "black"
+
+[tool.coverage.run]
+source = ["."]
+data_file = "test_output/.coverage"
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true
+
+[tool.coverage.html]
+directory = "test_output/htmlcov"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
