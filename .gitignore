@@ -2,9 +2,6 @@
 *.py[cod]
 __pycache__/
 
-# Javascript
-node_modules/
-
 # Editors and backups
 .project
 .vscode/
@@ -26,13 +23,9 @@ TODO
 *.swp
 *.zip
 
-# This is the customized part for the app
-db.sqlite3
+# This is the customized part for this repository
 .venv/
-staticfiles/
-mediafiles/
 test_output/
 *.egg-info/
 dist/
 .env
-tmp/

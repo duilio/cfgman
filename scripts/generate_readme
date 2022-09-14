@@ -1,0 +1,313 @@
+#!/usr/bin/env python
+"""
+Generate the `README.md` for the `scripts/` folder.
+
+Collect docstrings from each executable and generate a summary with a list of
+each command with a short description and a reference with a longer
+description.
+
+The script format is identified by the hashbang, it currently supports only
+the followings:
+
+* python: `#!/usr/bin/env python`
+* shell: `#!/bin/bash` and  `#!/bin/sh`
+
+For shell scripts the docstring is the first block of comment excluding the
+hashbang.
+Python
+[inspect.cleandoc](https://docs.python.org/3/library/inspect.html#inspect.cleandoc)
+function is used for normalization.
+
+# Usage
+
+Generate `scripts/README.md`:
+
+    ./scripts/generate_readme
+
+Check if there are no changes in the `README.md`:
+
+    ./scripts/generate_readme -c
+
+# Template format
+
+`README.md.template` is used as a template. The file is read and the expression
+inside double-brackets (such as `{{ summary }}`) are replaced with generated
+text.
+
+A command may have an optional json dictionary for parameters.
+
+## Command list
+
+- `summary` (no parameters): list of commands with their summary.
+- `reference` (level: int = 0): one paragraph per command with a detailed
+  description. You can change the starting heading level with the optional
+  param `level`. (E.g. `{{ reference {"level": 2} }}`)
+
+# Docstring notes
+
+- First paragraph is used for the summary.
+- Summary must end with a punctuation character.
+- Use Markdown for formatting.
+
+"""
+import argparse
+import ast
+import inspect
+import json
+import os
+import re
+import sys
+import textwrap
+from itertools import islice, takewhile
+from pathlib import Path
+from typing import BinaryIO, NamedTuple
+
+MAX_LINE_LENGTH = 88
+
+
+class DocString(NamedTuple):
+    summary: str
+    body: str
+
+
+def split_docstring(docstring: str) -> DocString:
+    """Split a docstring into a pair `(summary, body)`.
+
+    The summary is the first paragraph of the docstring and it must end with a
+    punctuation (`.`, `!` or `?`).
+    """
+    summary_strings = []
+
+    iter_lines = iter(docstring.splitlines())
+
+    for line in iter_lines:
+        if not line or line.isspace():
+            break
+        summary_strings.append(line)
+
+    summary = " ".join(summary_strings).strip()
+    body = "\n".join(iter_lines).strip()
+
+    if not summary[-1] in ".?!":
+        raise ValueError("Summary must end with a punctuaction character.")
+
+    return DocString(summary, body)
+
+
+def parse_python_file(fin: BinaryIO) -> DocString:
+    code = ast.parse(fin.read())
+    docstring = ast.get_docstring(code, clean=True)
+    return split_docstring(docstring)
+
+
+def parse_shell_file(fin: BinaryIO) -> DocString:
+    header_lines = islice(takewhile(lambda x: x.startswith(b"#"), iter(fin)), 1, None)
+    docstring = inspect.cleandoc(
+        b"".join(x.lstrip(b"#") for x in header_lines).decode("utf-8")
+    )
+
+    return split_docstring(docstring)
+
+
+HASHBANG_PATTERN = re.compile(
+    rb"""
+\#!
+(?:
+  (?P<python>/usr/bin/env[ ]python3?) |
+  (?P<shell>/bin/(?:ba)?sh)
+)
+""",
+    re.VERBOSE,
+)
+
+
+def parse_file(path: Path) -> DocString:
+    """Parse a file and return its docstring."""
+
+    with open(path, "rb") as fin:
+        hashbang = next(fin).removesuffix(b"\n")
+        if not hashbang.startswith(b"#!"):
+            raise ValueError("File doesn't start with an hashbang.")
+
+        # loose matching, we don't really need to perform a very accurate one
+        if (m := HASHBANG_PATTERN.fullmatch(hashbang)) is None:
+            raise ValueError("Invalid hashbang.")
+
+        match m.lastgroup:
+            case "python":
+                parse_function = parse_python_file
+            case "shell":
+                parse_function = parse_shell_file
+            case _:
+                raise ValueError("File format not supported.")
+
+        fin.seek(0)
+        return parse_function(fin)
+
+
+def generate_summary(entries: dict[str, DocString]) -> str:
+    """Generate the list of commands with their short description."""
+
+    r = []
+
+    for filename in sorted(entries):
+        docstring = entries[filename]
+        summary = textwrap.fill(
+            f"`scripts/{filename}`: {docstring.summary}",
+            width=MAX_LINE_LENGTH,
+            initial_indent="- ",
+            subsequent_indent="  ",
+            break_long_words=False,
+            break_on_hyphens=False,
+        )
+
+        r.append(summary)
+
+    return "\n".join(r)
+
+
+def markdown_shift_headings(content: str, level: int) -> str:
+    """Shift all headings with the desired level."""
+
+    base_heading = "#" * level
+    HEADINGS_PATTERN = re.compile("^#", re.MULTILINE)
+    return HEADINGS_PATTERN.sub(base_heading, content)
+
+
+PARAGRAPH_TEMPLATE = """\
+{base_heading} {filename}
+
+{summary}
+
+{body}
+"""
+
+
+def generate_reference(entries: dict[str, DocString], level=0) -> str:
+    """Generate a reference of all commands."""
+
+    docs: list[str] = []
+    base_heading = "#" * level
+
+    for filename in sorted(entries):
+        docstring = entries[filename]
+
+        body = markdown_shift_headings(docstring.body, level=level + 1)
+
+        paragraph = PARAGRAPH_TEMPLATE.format(
+            base_heading=base_heading,
+            filename=filename,
+            summary=docstring.summary,
+            body=body,
+        ).strip()
+
+        docs.append(paragraph)
+
+    return "\n\n\n".join(docs)
+
+
+TEMPLATE_CMD_PATTERN = re.compile(
+    r"""
+{{\s*
+(?P<command>[a-z_][a-z_0-9]*)
+\s*
+(?P<params>\{[^\}]*\})?
+\s*}}
+""",
+    re.VERBOSE,
+)
+
+
+def render_template(template: str, entries: dict[str, DocString]) -> str:
+    """Basic template engine rendering.
+
+    Run all commands between `{{ ... }}` pairs and replace the placeholders
+    in the original text with the resulting strings.
+
+    NOTE: This is a very weak and ugly template renderer. Don't use it at home.
+    """
+
+    def execute_command(m: re.Match) -> str:
+        params = {}
+        if p := m.group("params"):
+            params = json.loads(p)
+
+        match m.group("command"):
+            case "summary":
+                return generate_summary(entries, **params)
+            case "reference":
+                return generate_reference(entries, **params)
+            case other:
+                raise ValueError(
+                    f"Unknown template command `{other}` at char {m.start()}."
+                )
+
+    return TEMPLATE_CMD_PATTERN.sub(execute_command, template)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c",
+        "--check",
+        dest="check",
+        default=False,
+        action="store_true",
+        help="Check the input is ok and the output is already in sync.",
+    )
+    parser.add_argument(
+        "-d",
+        "--debug",
+        dest="debug",
+        default=False,
+        action="store_true",
+        help="Enable debug mode.",
+    )
+    args = parser.parse_args()
+
+    root = Path(__file__).resolve().parent
+
+    entries: dict[str, DocString] = {}
+    errors: dict[str, str] = {}
+
+    for path in root.iterdir():
+        if path.is_file() and os.access(path, os.X_OK):
+            try:
+                docstring = parse_file(path)
+            except Exception as e:
+                if args.debug:
+                    raise
+                errors[path.name] = str(e)
+                continue
+            entries[path.name] = docstring
+
+    if errors:
+        print("Errors have been found:", file=sys.stderr)
+        for filename, error in errors.items():
+            print(f"{filename}: {error}", file=sys.stderr)
+
+        sys.exit(1)
+
+    readme = root / "README.md"
+    template = root / "README.md.template"
+
+    with open(template) as fin:
+        template_content = fin.read()
+
+    content = render_template(template_content, entries)
+
+    with open(readme) as fin:
+        if fin.read() != content:
+            changes = True
+
+    if args.check and changes:
+        print("Check failed: changes found.", file=sys.stderr)
+        sys.exit(1)
+
+    if changes:
+        with open(readme, "w") as fout:
+            fout.write(content)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

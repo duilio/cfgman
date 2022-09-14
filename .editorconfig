@@ -1,0 +1,35 @@
+root = true
+
+# global
+[*]
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+trim_trailing_whitespace = true
+charset = utf-8
+
+# code
+[*.{py}]
+indent_size = 4
+max_line_length = 88
+
+[*.{js,ts,jsx,tsx}]
+indent_size = 2
+max_line_length = 79
+
+# markups
+[*.{html,hbs}]
+indent_size = 2
+
+# json/yaml
+[*.{json,yml}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab
+
+[*.md]
+max_line_length = 88
+
+# might be and empty line part of a code block
+trim_trailing_whitespace = false
