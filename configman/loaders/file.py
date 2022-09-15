@@ -1,3 +1,9 @@
+"""File loaders.
+
+Support multiple file formats and multiple files.
+(e.g. default config + user overrides)
+
+"""
 import json
 from collections.abc import Callable, Iterable, Sequence
 from functools import partial
@@ -44,15 +50,31 @@ file_suffixes = {
 def load_file(
     cls: type[_T],
     *,
-    subpath: str | Sequence[str] | None = None,
     files: Iterable[str | Path] | str | Path,
+    subpath: str | Sequence[str] | None = None,
     supported_file_types: Sequence[FileType] | None = None,
-    validate=True,
-    load_all_files=False,
-    load_at_least_one_file=False,
+    validate: bool = True,
+    load_all_files: bool = False,
+    load_at_least_one_file: bool = False,
 ) -> list[dict[str, Any]]:
-    """Load a config file or multiple config files."""
+    """Load a config file or multiple config files.
 
+    Args:
+        cls: class used for validation.
+        files: either a file path or a list of file paths.
+        subpath: wrap the result in the subpath of a new `dict`. Validation is
+            done before wrapping.
+        supported_file_types: list of supported file types. `None` means all of
+            them.
+        validate: validate the result.
+        load_all_files: if `False` unexisting files are skipped.
+        load_at_least_one_file: if `True` an exception is raised when no files
+            are loaded.
+
+    Returns:
+        A list of dictionary to be used as a source for
+        [`load_config`][configman.load_config].
+    """
     # if supported_file_types is None, then it means all supported files.
     if supported_file_types is None:
         supported_file_types = [FileType.JSON]
@@ -106,12 +128,30 @@ def file_loader(
     subpath: str | Sequence[str] | None = None,
     files: Iterable[str | Path] | str | Path,
     supported_file_types: Sequence[FileType] | None = None,
-    validate=True,
-    load_all_files=False,
-    load_at_least_one_file=False,
+    validate: bool = True,
+    load_all_files: bool = False,
+    load_at_least_one_file: bool = False,
 ) -> Callable[[type], list[dict[str, Any]]]:
-    """Return a function to load the given files."""
+    """Return a new loader to be used by [`load_config`][configman.load_config].
 
+    This is just a wrapper for [`load_file`][configman.loaders.file.load_file].
+
+    Args:
+        cls: class used for validation.
+        files: either a file path or a list of file paths.
+        subpath: wrap the result in the subpath of a new `dict`. Validation is
+            done before wrapping.
+        supported_file_types: list of supported file types. `None` means all of
+            them.
+        validate: validate the result.
+        load_all_files: if `False` unexisting files are skipped.
+        load_at_least_one_file: if `True` an exception is raised when no files
+            are loaded.
+
+    Returns:
+        A function that can be used as a source for the configuration.
+            See [load_config][configman.load_config].
+    """
     wrapped_func = partial(
         load_file,
         subpath=subpath,

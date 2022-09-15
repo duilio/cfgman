@@ -1,6 +1,6 @@
 """Some internal functions to manipulate trees.
 
-In this context, trees are nested trees where keys are strings and values are
+In this context, trees are nested dict where keys are strings and values are
 either trees or Any.
 
 """

@@ -1,3 +1,15 @@
+"""
+configman is a configuration manager for python.
+
+It provides some utility to:
+
+- combine configuration from different sources (e.g. files, environment
+  variables, ...)
+- validate the configuration (via apischema)
+
+
+
+"""
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import MISSING, dataclass, fields, is_dataclass
 from typing import Any, TypeVar, cast
@@ -19,13 +31,21 @@ defaults: dict[type, Any] = {}
 def configclass(cls: type[_T]) -> type[_T]:
     """Register the class as a config class.
 
-    If the class is not already a dataclass, apply the dataclass decorator too.
+    If the class is not already a [`dataclass`][dataclasses], apply the
+    [`dataclass`][dataclasses.dataclass] decorator too.
 
-    Usage:
+    Args:
+      cls: class to register.
 
-    @configclass
-    class A:
-        x: int
+    Returns:
+      Either `cls` or `dataclass(cls)`.
+
+    Examples:
+        Define a new configclass.
+
+        >>> @configclass
+        ... class A:
+        ...    x: int
     """
     if not is_dataclass(cls):
         datacls = dataclass(cls)
@@ -38,20 +58,32 @@ def configclass(cls: type[_T]) -> type[_T]:
 
 def load_config(
     cls: type[_T],
-    *args: dict[str, Any] | Callable[[type[_T]], dict[str, Any] | list[dict[str, Any]]],
+    *sources: dict[str, Any]
+    | Callable[[type[_T]], dict[str, Any] | list[dict[str, Any]]],
 ) -> _T:
-    """Load a configuration.
+    """Load a configuration from multiple sources.
 
-    First argument should be a configclass, then the following args are either
-    dictionaries or callables which take the configclass as input and return
-    a dictionary.
+    The order of the sources matters: the first one is the lowest priority one
+    (e.g. default values), the last one is the highest priority one (e.g. command
+    line parameters).
 
-    All dictionaries are then merged and deserialized into a `cls`.
+    Default instances of the `configclasses` in the result tree will be assigned
+    if the configuration is loaded correctly.
+
+    Args:
+        cls: configuration class to use for both validation and deserialization.
+        *sources: configuration sources. A source can be a regular `dict` or a
+            [loader][configman.loaders].
+
+    Returns:
+        An instance of the `configclass` with the data resulting from the merged
+            sources.
+
     """
     if cls not in register:
         raise ValueError("First argument of load_config must be a configclass.")
 
-    unflattened_layers = (x(cls) if callable(x) else x for x in args)
+    unflattened_layers = (x(cls) if callable(x) else x for x in sources)
     layers: list[dict[str, Any]] = []
 
     for x in unflattened_layers:
@@ -176,10 +208,25 @@ def _merge_node_path(tree: Node, path: NodePath, new_value: Any) -> None:
 
 
 def get_default_config(cls: type[_T]) -> _T:
-    """Return the default configuration for the given config class.
+    """Return the default configuration for the given `configclass`.
 
-    Raise KeyError if the class is either a non-registered configclass or it
-    has not been loaded yet.
+    Default config instances are created once
+    [`load_config`][configman.load_config] has been called successfully.
+
+    Note:
+        If a class has been instantiated multiple times (because `load_config`
+        has been called multiple times or because it has multiple places in the
+        configuration) the last instance is considered the default one.
+
+    Args:
+        cls: the requested type of the default instance.
+
+    Raises:
+        KeyError: if the class is not registered via
+            [`configclass`][configman.configclass].
+
+    Returns:
+        The default instance for `cls`.
     """
     return cast(_T, defaults[cls])
 
@@ -187,6 +234,7 @@ def get_default_config(cls: type[_T]) -> _T:
 def reset():
     """Reset the default configclasses.
 
-    This is an utility function for tests.
+    *Warning*: this is an utility function for tests, you hardly need to use
+    this in your app.
     """
     defaults.clear()

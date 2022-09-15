@@ -1,0 +1,34 @@
+site_name: ConfigMan
+repo_url: https://github.com/duilio/configman
+repo_name: configman
+
+nav:
+  - Home: index.md
+  - Usage: usage.md
+  - API Reference:
+      - configman: api/configman.md
+      - loaders: api/loaders.md
+  - How to contribute: contributing.md
+
+theme:
+  name: material
+  icon:
+    logo: material/cog
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          import:
+            - https://docs.python.org/3/objects.inv
+          options:
+            show_source: false
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - toc:
+      permalink: true

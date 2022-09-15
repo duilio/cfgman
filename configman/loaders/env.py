@@ -1,3 +1,5 @@
+"""Environment variable loaders."""
+
 import os
 from collections.abc import Callable, Mapping, Sequence
 from functools import partial
@@ -15,10 +17,37 @@ def load_env(
     *,
     mapping: Mapping[str, str],
     subpath: str | Sequence[str] | None = None,
-    validate=False,
+    validate: bool = False,
     prefix: str = "",
     env: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
+    """Load a dict from environment variables.
+
+    Given a mapping `envvar` -> `dotted.path`, creates a `dict` where each
+    `dotted.path` contains the variable of the `envvar`.
+
+    Missing variables are ignored.
+
+    Examples:
+        >>> load_env(
+        ...   mapping={"VAR1": "a.b", "VAR2": "a.c", "MISS": "b.c"},
+        ...   env={"VAR1": "var1", "VAR2": "var2"}
+        ... )
+        {'a': {'b': 'var1', 'c': 'var2'}}
+
+    Args:
+        cls: class to use for validation.
+        mapping: the variable mapping.
+        subpath: wrap the result in the subpath of a new `dict`.
+        validate: validate the result against the `cls`.
+        prefix: prefix to apply to all keys in the mapping.
+        env: `dict` to use instead of the environment variables. If `None` use
+            [`os.environ`][os.environ].
+
+    Returns:
+        A `dict` that can be used as a source for the configuration.
+            See [load_config][configman.load_config].
+    """
     if env is None:
         env = os.environ
 
@@ -57,12 +86,28 @@ def env_loader(
     cls: type[_T] = None,
     subpath: str | Sequence[str] | None = None,
     mapping: Mapping[str, str],
-    validate=False,
+    validate: bool = False,
     prefix: str = "",
     env: Mapping[str, str] | None = None,
 ) -> Callable[[type], dict[str, Any]]:
-    """Return a function to load the environment."""
+    """Create a new loader for environment variables.
 
+    Accept the same parameters of [`load_env`][configman.loaders.env.env_loader]
+    but return a callable instead.
+
+    Args:
+        cls: class to use for validation.
+        mapping: the variable mapping.
+        subpath: wrap the result in the subpath of a new `dict`.
+        validate: validate the result against the `cls`.
+        prefix: prefix to apply to all keys in the mapping.
+        env: `dict` to use instead of the environment variables. If `None` use
+            [`os.environ`][os.environ].
+
+    Returns:
+        A function that can be used as a source for the configuration.
+            See [load_config][configman.load_config].
+    """
     wrapped_func = partial(
         load_env,
         mapping=mapping,
