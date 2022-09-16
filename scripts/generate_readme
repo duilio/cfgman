@@ -296,6 +296,7 @@ def main():
 
     content = render_template(template_content, entries)
 
+    changes = False
     with open(readme) as fin:
         if fin.read() != content:
             changes = True

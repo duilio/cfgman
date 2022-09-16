@@ -39,21 +39,26 @@ jobs:
         id: cache-venv
         with:
           path: .venv
-          key: venv-Ubuntu-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
+          key: pydeps-lint-Ubuntu-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: Ensure cache is healthy
         if: steps.cache-venv.outputs.cache-hit == 'true'
         run: timeout 10s poetry run pip --version || rm -rf .venv
+
+      - name: Install dependencies
+        run: poetry install --only main --only test -vvv
+
+      - name: Get pre-commit version
+        id: pre-commit-version
+        run: |
+          echo ::set-output name=version::$(poetry run pre-commit --version")
 
       - name: Set up cache for pre-commit
         uses: actions/cache@v3
         id: cache-pre-commit
         with:
           path: ~/.cache/pre-commit
-          key: venv-Ubuntu-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/.pre-commit-config.yaml') }}
-
-      - name: Install dependencies
-        run: poetry install --only main --only test -E all -vvv
+          key: pre-commit-Ubuntu-${{ steps.full-python-version.outputs.version }}-${{ steps.pre-commit-version.outputs-version }}-${{ hashFiles('**/.pre-commit-config.yaml') }}
 
       - name: Lint
         run: |
@@ -90,7 +95,7 @@ jobs:
         id: cache
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
+          key: pydeps-test-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: Ensure cache is healthy
         # MacOS does not come with `timeout` command out of the box
