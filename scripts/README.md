@@ -10,6 +10,7 @@ See [below](#how-to-change-this-file) if you want to change it.
 This is the list of the available commands:
 
 - `scripts/docs-build`: Build the documentation site.
+- `scripts/docs-deploy`: Deploy the documentation site.
 - `scripts/docs-serve`: Start the local server for the doc site.
 - `scripts/generate_readme`: Generate the `README.md` for the `scripts/` folder.
 - `scripts/lint`: Lint all files in the repo.
@@ -20,6 +21,11 @@ This is the list of the available commands:
 ### docs-build
 
 Build the documentation site.
+
+
+### docs-deploy
+
+Deploy the documentation site.
 
 
 ### docs-serve
