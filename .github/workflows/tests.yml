@@ -102,4 +102,4 @@ jobs:
 
       - name: Test with pytest
         run: |
-          ./scripts/test -v
+          ./scripts/test -v --cov --cov-report=term
