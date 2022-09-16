@@ -2,9 +2,24 @@
 name = "configman"
 version = "0.1.0"
 description = "Configuration manager made easy."
-license = "MIT"
 authors = [
     "Maurizio Sambati <maurizio@skicelab.com>",
+]
+license = "MIT"
+readme = "README.md"
+keywords = ["config", "settings"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    # "Development Status :: 4 - Beta",
+    # "Development Status :: 5 - Production/Stable",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    'Programming Language :: Python :: 3.10',
+    'License :: OSI Approved :: MIT License',
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+include = [
+    "LICENSE",
 ]
 
 [tool.poetry.dependencies]
