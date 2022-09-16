@@ -13,6 +13,56 @@ on:
       - "**"
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Get full Python version
+        id: full-python-version
+        run: |
+          echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
+
+      - name: Install poetry
+        run: |
+          curl -fsS https://install.python-poetry.org | python - --preview -y
+
+      - name: Update PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Configure poetry
+        run: poetry config virtualenvs.in-project true
+
+      - name: Set up cache for python dependencies
+        uses: actions/cache@v3
+        id: cache-venv
+        with:
+          path: .venv
+          key: venv-Ubuntu-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Ensure cache is healthy
+        if: steps.cache-venv.outputs.cache-hit == 'true'
+        run: timeout 10s poetry run pip --version || rm -rf .venv
+
+      - name: Set up cache for pre-commit
+        uses: actions/cache@v3
+        id: cache-pre-commit
+        with:
+          path: ~/.cache/pre-commit
+          key: venv-Ubuntu-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/.pre-commit-config.yaml') }}
+
+      - name: Install dependencies
+        run: poetry install --only main --only test -E all -vvv
+
+      - name: Lint
+        run: |
+          ./scripts/lint
+
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -62,10 +112,6 @@ jobs:
 
       - name: Install dependencies
         run: poetry install --only main --only test -E all -vvv
-
-      - name: Lint
-        run: |
-          ./scripts/lint
 
       - name: Test with pytest
         run: |
