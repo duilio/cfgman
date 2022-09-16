@@ -28,15 +28,11 @@ jobs:
         run: |
           echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
 
-      - name: Install poetry
-        run: |
-          curl -fsS https://install.python-poetry.org | python - --preview -y
-
-      - name: Update PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Configure poetry
-        run: poetry config virtualenvs.in-project true
+      - name: Install and configure Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.2.0
+          virtualenvs-in-project: true
 
       - name: Set up cache for python dependencies
         uses: actions/cache@v3
@@ -83,20 +79,11 @@ jobs:
         run: |
           echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
 
-      - name: Install poetry
-        run: |
-          curl -fsS https://install.python-poetry.org | python - --preview -y
-
-      - name: Update PATH
-        if: ${{ matrix.os != 'Windows' }}
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Update Path for Windows
-        if: ${{ matrix.os == 'Windows' }}
-        run: echo "$APPDATA\Python\Scripts" >> $GITHUB_PATH
-
-      - name: Configure poetry
-        run: poetry config virtualenvs.in-project true
+      - name: Install and configure Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.2.0
+          virtualenvs-in-project: true
 
       - name: Set up cache
         uses: actions/cache@v3
