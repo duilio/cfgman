@@ -929,7 +929,7 @@ yaml = ["PyYAML"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "cd625863a0a855ea074240330492bd4eab5e99c1ef080c67491ac630400f57b1"
+content-hash = "4ac1b0dad8331ec7c209307c4303657b949e3f16d17ca6659b59b2b2676cec97"
 
 [metadata.files]
 apischema = [

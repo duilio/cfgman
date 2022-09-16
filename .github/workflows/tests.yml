@@ -51,7 +51,7 @@ jobs:
       - name: Get pre-commit version
         id: pre-commit-version
         run: |
-          echo ::set-output name=version::$(poetry run pre-commit --version")
+          echo ::set-output name=version::$(poetry run pre-commit --version)
 
       - name: Set up cache for pre-commit
         uses: actions/cache@v3
