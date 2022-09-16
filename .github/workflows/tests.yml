@@ -69,4 +69,4 @@ jobs:
 
       - name: Test with pytest
         run: |
-          ./scripts/test.py -v
+          ./scripts/test -v
