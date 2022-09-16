@@ -42,5 +42,9 @@ and then wrapped in a tree at the given subpath.
 
 """
 
-from .env import env_loader, load_env  # noqa: F401
-from .file import file_loader, load_file  # noqa: F401
+from .env import env_loader as env_loader
+from .env import load_env as load_env
+from .file import file_loader as file_loader
+from .file import load_file as load_file
+
+__all__ = ["env_loader", "load_env", "file_loader", "load_file"]

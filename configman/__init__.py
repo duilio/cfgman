@@ -10,7 +10,7 @@ It provides some utility to:
 
 
 """
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping
 from dataclasses import MISSING, dataclass, fields, is_dataclass
 from typing import Any, TypeVar, cast
 
@@ -25,6 +25,8 @@ _T = TypeVar("_T")
 
 register = set[type]()
 defaults: dict[type, Any] = {}
+
+__all__ = ["MISSING", "configclass", "load_config", "reset", "get_default_config"]
 
 
 @dataclass_transform()
@@ -151,7 +153,7 @@ def _merge_layers(*layers: dict[str, Any]) -> dict[str, Any]:
     return current
 
 
-def _prune_missing_inplace(d: dict[str, Any]) -> None:
+def _prune_missing_inplace(d: MutableMapping[str, Any]) -> None:
     """Prune all nodes containing a MISSING values."""
 
     to_del = []
@@ -159,7 +161,7 @@ def _prune_missing_inplace(d: dict[str, Any]) -> None:
     for k, v in d.items():
         if v is MISSING:
             to_del.append(k)
-        elif isinstance(v, Mapping) and v:
+        elif isinstance(v, MutableMapping) and v:
             _prune_missing_inplace(v)
 
     for k in to_del:
@@ -231,7 +233,7 @@ def get_default_config(cls: type[_T]) -> _T:
     return cast(_T, defaults[cls])
 
 
-def reset():
+def reset() -> None:
     """Reset the default configclasses.
 
     *Warning*: this is an utility function for tests, you hardly need to use

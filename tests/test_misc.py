@@ -24,7 +24,7 @@ class ConfigWithDefaults:
     number: int = 10
 
 
-def test_nested_config():
+def test_nested_config() -> None:
     config = load_config(
         Config,
         {"name": "foo"},
@@ -44,7 +44,7 @@ def test_nested_config():
     }
 
 
-def test_callables():
+def test_callables() -> None:
     config = load_config(
         Config,
         lambda x: {"name": "foo", "values": [1]},
@@ -67,11 +67,11 @@ default_config = {
 }
 
 
-def load_default_config():
+def load_default_config() -> None:
     load_config(Config, default_config)
 
 
-def test_get_default():
+def test_get_default() -> None:
     load_default_config()
     webconfig = get_default_config(WebServerConfig)
     assert webconfig.host == "localhost"
@@ -81,7 +81,7 @@ def test_get_default():
     assert config.values is None
 
 
-def test_missing():
+def test_missing() -> None:
     config = load_config(
         Config,
         {"name": "foo", "values": [1], "web": {"host": "localhost", "port": 80}},
@@ -95,7 +95,7 @@ def test_missing():
     }
 
 
-def test_missing_with_defaults():
+def test_missing_with_defaults() -> None:
     config_with_defaults = load_config(
         ConfigWithDefaults, {"name": MISSING, "number": 20}
     )

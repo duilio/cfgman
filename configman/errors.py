@@ -13,7 +13,7 @@ class NoConfigFileError(Exception):
     def __init__(self, paths: list[Path]):
         self._paths = paths
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"No config files in the following paths:"
             f" {', '.join(map(str, self._paths))}"

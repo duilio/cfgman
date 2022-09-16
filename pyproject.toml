@@ -2,7 +2,10 @@
 name = "configman"
 version = "0.1.0"
 description = "Configuration manager made easy."
-authors = ["Maurizio Sambati <maurizio@skicelab.com>"]
+license = "MIT"
+authors = [
+    "Maurizio Sambati <maurizio@skicelab.com>",
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -33,6 +36,9 @@ mkdocstrings-python = "^0.7.1"
 yaml = ["PyYAML"]
 toml = ["tomli"]
 all = ["PyYAML", "tomli"]
+
+[tool.mypy]
+strict = true
 
 [tool.isort]
 known_first_party = "configman"

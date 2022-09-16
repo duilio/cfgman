@@ -19,7 +19,7 @@ class ApplicationConfig:
     name: str
 
 
-def test_load_env(mocker: MockerFixture):
+def test_load_env(mocker: MockerFixture) -> None:
     mocker.patch.dict(
         os.environ,
         {
@@ -39,7 +39,7 @@ def test_load_env(mocker: MockerFixture):
     assert configdict == {"name": "myapp", "web": {"host": "127.0.0.1", "port": "8080"}}
 
 
-def test_env_loader(mocker: MockerFixture):
+def test_env_loader(mocker: MockerFixture) -> None:
     mocker.patch.dict(
         os.environ,
         {

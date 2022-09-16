@@ -83,7 +83,7 @@ def load_env(
 
 def env_loader(
     *,
-    cls: type[_T] = None,
+    cls: type[_T] | None = None,
     subpath: str | Sequence[str] | None = None,
     mapping: Mapping[str, str],
     validate: bool = False,

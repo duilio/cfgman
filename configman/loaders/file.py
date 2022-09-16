@@ -8,7 +8,7 @@ import json
 from collections.abc import Callable, Iterable, Sequence
 from functools import partial
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 import apischema
 
@@ -182,9 +182,9 @@ def _load_single_file(
 
         match filename.suffix:
             case ".json":
-                return json.load(fin)
+                return cast(dict[str, Any], json.load(fin))
             case ".yaml" | ".yml":
-                return yaml.safe_load(fin)
+                return cast(dict[str, Any], yaml.safe_load(fin))
             case ".toml":
                 return tomli.load(fin)
             case _:
