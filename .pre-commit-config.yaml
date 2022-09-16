@@ -54,3 +54,13 @@ repos:
     rev: v2.20.0
     hooks:
       - id: validate_manifest
+
+  - repo: local
+    hooks:
+      - id: generate-readme
+        name: generate-readme
+        stages: [commit]
+        language: system
+        files: scripts/*
+        entry: ./scripts/generate_readme
+        pass_filenames: false
