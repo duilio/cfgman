@@ -12,14 +12,14 @@ from typing import Any, TypeVar, cast
 
 import apischema
 
-from configman.errors import (
+from cfgman.errors import (
     ConfigError,
     NoConfigFileError,
     UnsupportedFileType,
     ValidationError,
 )
-from configman.tree import envelop_subpath
-from configman.types import FileType
+from cfgman.tree import envelop_subpath
+from cfgman.types import FileType
 
 try:
     import yaml
@@ -73,7 +73,7 @@ def load_file(
 
     Returns:
         A list of dictionary to be used as a source for
-        [`load_config`][configman.load_config].
+        [`load_config`][cfgman.load_config].
     """
     # if supported_file_types is None, then it means all supported files.
     if supported_file_types is None:
@@ -132,9 +132,9 @@ def file_loader(
     load_all_files: bool = False,
     load_at_least_one_file: bool = False,
 ) -> Callable[[type], list[dict[str, Any]]]:
-    """Return a new loader to be used by [`load_config`][configman.load_config].
+    """Return a new loader to be used by [`load_config`][cfgman.load_config].
 
-    This is just a wrapper for [`load_file`][configman.loaders.file.load_file].
+    This is just a wrapper for [`load_file`][cfgman.loaders.file.load_file].
 
     Args:
         cls: class used for validation.
@@ -150,7 +150,7 @@ def file_loader(
 
     Returns:
         A function that can be used as a source for the configuration.
-            See [load_config][configman.load_config].
+            See [load_config][cfgman.load_config].
     """
     wrapped_func = partial(
         load_file,

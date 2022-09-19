@@ -1,4 +1,4 @@
-# configman
+# cfgman
 
 A configuration manager for Python application.
 
@@ -12,7 +12,7 @@ A configuration manager for Python application.
 ## Usage
 
 ```python
-from configman import (
+from cfgman import (
     configclass,
     load_config,
     get_default_config,

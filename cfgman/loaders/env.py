@@ -7,7 +7,7 @@ from typing import Any, TypeVar
 
 from apischema import deserialize
 
-from configman.tree import ensure_path_prefix, envelop_subpath
+from cfgman.tree import ensure_path_prefix, envelop_subpath
 
 _T = TypeVar("_T")
 
@@ -46,7 +46,7 @@ def load_env(
 
     Returns:
         A `dict` that can be used as a source for the configuration.
-            See [load_config][configman.load_config].
+            See [load_config][cfgman.load_config].
     """
     if env is None:
         env = os.environ
@@ -92,7 +92,7 @@ def env_loader(
 ) -> Callable[[type], dict[str, Any]]:
     """Create a new loader for environment variables.
 
-    Accept the same parameters of [`load_env`][configman.loaders.env.env_loader]
+    Accept the same parameters of [`load_env`][cfgman.loaders.env.env_loader]
     but return a callable instead.
 
     Args:
@@ -106,7 +106,7 @@ def env_loader(
 
     Returns:
         A function that can be used as a source for the configuration.
-            See [load_config][configman.load_config].
+            See [load_config][cfgman.load_config].
     """
     wrapped_func = partial(
         load_env,

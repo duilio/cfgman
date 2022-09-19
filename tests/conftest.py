@@ -2,10 +2,10 @@ from collections.abc import Iterator
 
 import pytest
 
-import configman
+import cfgman
 
 
 @pytest.fixture(scope="module", autouse=True)
 def cleanup() -> Iterator[None]:
     yield
-    configman.reset()
+    cfgman.reset()

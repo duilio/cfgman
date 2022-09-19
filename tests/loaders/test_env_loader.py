@@ -3,8 +3,8 @@ from dataclasses import asdict
 
 from pytest_mock import MockerFixture
 
-from configman import configclass, load_config
-from configman.loaders import env_loader, load_env
+from cfgman import configclass, load_config
+from cfgman.loaders import env_loader, load_env
 
 
 @configclass

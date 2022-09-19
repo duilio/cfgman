@@ -5,9 +5,9 @@ from textwrap import dedent
 
 import pytest
 
-from configman import configclass, load_config
-from configman.errors import NoConfigFileError
-from configman.loaders import file_loader, load_file
+from cfgman import configclass, load_config
+from cfgman.errors import NoConfigFileError
+from cfgman.loaders import file_loader, load_file
 
 
 @configclass

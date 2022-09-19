@@ -1,5 +1,5 @@
 <!-- prettier-ignore-start -->
-::: configman.loaders
+::: cfgman.loaders
     options:
       show_submodules: True
 <!-- prettier-ignore-end -->

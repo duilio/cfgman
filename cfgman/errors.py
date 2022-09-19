@@ -2,11 +2,11 @@ from pathlib import Path
 
 import apischema
 
-from configman.types import FileType
+from cfgman.types import FileType
 
 
 class ConfigError(Exception):
-    """configman configuration error."""
+    """cfgman configuration error."""
 
 
 class NoConfigFileError(Exception):
