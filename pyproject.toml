@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "configman"
+name = "cfgman"
 version = "0.1.0"
 description = "Configuration manager made easy."
 authors = [
@@ -7,6 +7,8 @@ authors = [
 ]
 license = "MIT"
 readme = "README.md"
+homepage = "https://duilio.github.io/cfgman/"
+repository = "https://github.com/duilio/cfgman"
 keywords = ["config", "settings"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -65,7 +67,7 @@ all = ["PyYAML", "tomli"]
 strict = true
 
 [tool.isort]
-known_first_party = "configman"
+known_first_party = "cfgman"
 profile = "black"
 
 [tool.coverage.run]

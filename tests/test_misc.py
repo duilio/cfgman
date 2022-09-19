@@ -2,7 +2,7 @@ from dataclasses import asdict
 
 from apischema import serialize
 
-from configman import MISSING, configclass, get_default_config, load_config
+from cfgman import MISSING, configclass, get_default_config, load_config
 
 
 @configclass

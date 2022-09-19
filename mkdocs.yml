@@ -1,13 +1,13 @@
-site_name: ConfigMan
-repo_url: https://github.com/duilio/configman
-repo_name: duilio/configman
-site_url: https://duilio.github.io/configman/
+site_name: CfgMan
+repo_url: https://github.com/duilio/cfgman
+repo_name: duilio/cfgman
+site_url: https://duilio.github.io/cfgman/
 
 nav:
   - Home: index.md
   - Usage: usage.md
   - API Reference:
-      - configman: api/configman.md
+      - cfgman: api/cfgman.md
       - loaders: api/loaders.md
   - How to contribute: contributing.md
 

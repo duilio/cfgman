@@ -1,5 +1,5 @@
 """
-configman is a configuration manager for python.
+cfgman is a configuration manager for python.
 
 It provides some utility to:
 
@@ -75,7 +75,7 @@ def load_config(
     Args:
         cls: configuration class to use for both validation and deserialization.
         *sources: configuration sources. A source can be a regular `dict` or a
-            [loader][configman.loaders].
+            [loader][cfgman.loaders].
 
     Returns:
         An instance of the `configclass` with the data resulting from the merged
@@ -213,7 +213,7 @@ def get_default_config(cls: type[_T]) -> _T:
     """Return the default configuration for the given `configclass`.
 
     Default config instances are created once
-    [`load_config`][configman.load_config] has been called successfully.
+    [`load_config`][cfgman.load_config] has been called successfully.
 
     Note:
         If a class has been instantiated multiple times (because `load_config`
@@ -225,7 +225,7 @@ def get_default_config(cls: type[_T]) -> _T:
 
     Raises:
         KeyError: if the class is not registered via
-            [`configclass`][configman.configclass].
+            [`configclass`][cfgman.configclass].
 
     Returns:
         The default instance for `cls`.

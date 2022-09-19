@@ -1,6 +1,6 @@
 """
 `Loaders` retrieve data from sources such as files and environment variables
-and create a tree to be used by [`load_config`][configman.load_config].
+and create a tree to be used by [`load_config`][cfgman.load_config].
 
 A loader is just a function that takes parameter and return a dictionary.
 A loader factory is a wrapper over a loader which accepts only one parameter:

@@ -1,3 +1,3 @@
 <!-- prettier-ignore-start -->
-::: configman
+::: cfgman
 <!-- prettier-ignore-end -->
