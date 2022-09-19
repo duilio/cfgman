@@ -12,6 +12,8 @@ This is the list of the available commands:
 - `scripts/docs-build`: Build the documentation site.
 - `scripts/docs-deploy`: Deploy the documentation site.
 - `scripts/docs-serve`: Start the local server for the doc site.
+- `scripts/format-md-codeblocks`: Format python code blocks in markdown files using
+  black.
 - `scripts/generate_readme`: Generate the `README.md` for the `scripts/` folder.
 - `scripts/lint`: Lint all files in the repo.
 - `scripts/test`: Run all tests.
@@ -31,6 +33,43 @@ Deploy the documentation site.
 ### docs-serve
 
 Start the local server for the doc site.
+
+
+### format-md-codeblocks
+
+Format python code blocks in markdown files using black.
+
+Only code-blocks marked with triple backticks are detected and they need to
+have the `python` language identifier.
+
+    ```python
+    x = 1  # a comment
+    ```
+
+#### Usage
+
+Check the options with the `-h` command flag.
+
+#### Examples
+
+Run on a list of files:
+
+    ./scripts/format-md-samples file ...
+
+Run on the committed markdown files:
+
+    ./scripts/format-md-samples $(git ls-files '*.md')
+
+Run on all markdown files excluding hidden ones:
+
+    ./scripts/format-md-samples .
+
+#### Notes
+
+Directories in the file list are expanded into all files included in the dir
+ending with `.md` and not into an hidden path (path starting with `.`). If you
+want to include hidden paths or files with other suffixes, just name them
+explicitly.
 
 
 ### generate_readme

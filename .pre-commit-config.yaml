@@ -64,3 +64,13 @@ repos:
         files: scripts/*
         entry: ./scripts/generate_readme
         pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: format-md-codeblocks
+        name: format-md-codeblocks
+        stages: [commit]
+        language: system
+        types: [markdown]
+        entry: poetry run ./scripts/format-md-codeblocks
+        pass_filenames: true

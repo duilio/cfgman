@@ -1,0 +1,202 @@
+#!/usr/bin/env python
+"""
+Format python code blocks in markdown files using black.
+
+Only code-blocks marked with triple backticks are detected and they need to
+have the `python` language identifier.
+
+    ```python
+    x = 1  # a comment
+    ```
+
+# Usage
+
+Check the options with the `-h` command flag.
+
+# Examples
+
+Run on a list of files:
+
+    ./scripts/format-md-samples file ...
+
+Run on the committed markdown files:
+
+    ./scripts/format-md-samples $(git ls-files '*.md')
+
+Run on all markdown files excluding hidden ones:
+
+    ./scripts/format-md-samples .
+
+# Notes
+
+Directories in the file list are expanded into all files included in the dir
+ending with `.md` and not into an hidden path (path starting with `.`). If you
+want to include hidden paths or files with other suffixes, just name them
+explicitly.
+
+"""
+import difflib
+import re
+import sys
+import textwrap
+from argparse import ArgumentParser
+from pathlib import Path
+from typing import NamedTuple
+
+import black.report
+from black import FileMode, format_file_contents
+
+CODE_BLOCK_PATTERN = re.compile(
+    r"""
+```
+(?P<lang>python)\n
+(?P<code>.*?)
+```
+""",
+    re.VERBOSE | re.MULTILINE | re.DOTALL,
+)
+
+
+class FileFormatResult(NamedTuple):
+    changes: bool
+    diff: str
+
+
+class DedentResult(NamedTuple):
+    prefix: str
+    text: str
+
+
+def dedent(codeblock: str) -> DedentResult:
+    """Similar to `textwrap.dedent` but returns also the removed prefix."""
+
+    lines = codeblock.splitlines(True)
+    first_line = lines[0]
+
+    prefix_length = len(first_line) - len(first_line.lstrip())
+    prefix = first_line[:prefix_length]
+
+    return DedentResult(prefix, "".join(x.removeprefix(prefix) for x in lines))
+
+
+def format_file(path: Path, backup: str, diff_only: bool) -> FileFormatResult:
+    with open(path) as fin:
+        content = fin.read()
+
+    def formatter(m: re.Match) -> str:
+        lang, code = m.group("lang", "code")
+
+        # TODO: we could add support for other languages
+        assert lang == "python"
+
+        prefix = content[m.start() : m.start("code")]
+        suffix = content[m.end("code") : m.end()]
+
+        code_indent_prefix, normalized_code = dedent(code)
+
+        try:
+            new_code = format_file_contents(
+                normalized_code, fast=False, mode=FileMode()
+            )
+            new_code = textwrap.indent(new_code, code_indent_prefix)
+        except black.report.NothingChanged:
+            return m.group(0)
+
+        return f"{prefix}{new_code}{suffix}"
+
+    new_content = CODE_BLOCK_PATTERN.sub(formatter, content)
+
+    if new_content == content:
+        return FileFormatResult(False, "")
+
+    if backup:
+        path.rename(path.name + backup)
+
+    if diff_only:
+        return FileFormatResult(
+            True,
+            "\n".join(
+                difflib.unified_diff(
+                    content.splitlines(),
+                    new_content.splitlines(),
+                    "Original",
+                    "Formatted",
+                    lineterm="",
+                )
+            ),
+        )
+
+    with open(path, "w") as fout:
+        fout.write(new_content)
+
+    return FileFormatResult(True, "")
+
+
+def main():
+    parser = ArgumentParser()
+    parser.add_argument(
+        "-d", "--diff-only", action="store_true", help="Only show the diff."
+    )
+    parser.add_argument(
+        "-b",
+        "--backup",
+        metavar="EXTENSION",
+        help="Backup the original file appending the given extension.",
+        default="",
+    )
+    parser.add_argument(
+        "files",
+        default=[],
+        nargs="+",
+        metavar="FILENAME",
+        help="File to format.",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="More verbose output.",
+    )
+    args = parser.parse_args()
+
+    if args.backup and args.diff_only:
+        print("Error: backup and diff-only are mutually exclusive.", file=sys.stderr)
+        sys.exit(1)
+
+    files: list[Path] = []
+    for f in args.files:
+        path = Path(f)
+        if not path.exists():
+            print(f"Error: {f} does not exist.", file=sys.stderr)
+            sys.exit(1)
+
+        if path.is_dir():
+            # recurse into the dir and find all non-hidden files
+            # ending with `.md`
+            files.extend(
+                [
+                    x
+                    for x in path.glob("**/*.md")
+                    if not str(x).startswith(".") and x.is_file()
+                ]
+            )
+        else:
+            files.append(path)
+
+    changes = 0
+    for path in files:
+        r = format_file(path, backup=args.backup, diff_only=args.diff_only)
+        if r.changes:
+            print(f"{path} has changes.")
+            changes += 1
+            if args.diff_only:
+                print(r.diff)
+        elif args.verbose:
+            print(f"{path} unchanged.")
+
+    if args.verbose:
+        print(f"Changed {changes}/{len(args.files)} files.")
+
+
+if __name__ == "__main__":
+    main()
