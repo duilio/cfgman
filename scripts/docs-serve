@@ -6,4 +6,4 @@ set -xeuo pipefail
 
 ROOT="$(dirname "$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )")"
 
-(cd "$ROOT"; poetry run mkdocs build)
+(cd "$ROOT"; poetry run mkdocs serve)
