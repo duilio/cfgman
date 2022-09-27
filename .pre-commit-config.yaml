@@ -62,7 +62,7 @@ repos:
         stages: [commit]
         language: system
         files: scripts/*
-        entry: ./scripts/generate_readme
+        entry: ./scripts/generate-readme
         pass_filenames: false
 
   - repo: local

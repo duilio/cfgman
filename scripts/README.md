@@ -13,7 +13,7 @@ This is the list of the available commands:
 - `scripts/docs-serve`: Start the local server for the doc site.
 - `scripts/format-md-codeblocks`: Format python code blocks in markdown files using
   black.
-- `scripts/generate_readme`: Generate the `README.md` for the `scripts/` folder.
+- `scripts/generate-readme`: Generate the `README.md` for the `scripts/` folder.
 - `scripts/lint`: Lint all files in the repo.
 - `scripts/publish`: Build and publish the package.
 - `scripts/test`: Run all tests.
@@ -67,7 +67,7 @@ want to include hidden paths or files with other suffixes, just name them
 explicitly.
 
 
-### generate_readme
+### generate-readme
 
 Generate the `README.md` for the `scripts/` folder.
 
