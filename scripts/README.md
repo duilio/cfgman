@@ -10,12 +10,12 @@ See [below](#how-to-change-this-file) if you want to change it.
 This is the list of the available commands:
 
 - `scripts/docs-build`: Build the documentation site.
-- `scripts/docs-deploy`: Deploy the documentation site.
 - `scripts/docs-serve`: Start the local server for the doc site.
 - `scripts/format-md-codeblocks`: Format python code blocks in markdown files using
   black.
 - `scripts/generate_readme`: Generate the `README.md` for the `scripts/` folder.
 - `scripts/lint`: Lint all files in the repo.
+- `scripts/publish`: Build and publish the package.
 - `scripts/test`: Run all tests.
 
 ## Reference
@@ -23,11 +23,6 @@ This is the list of the available commands:
 ### docs-build
 
 Build the documentation site.
-
-
-### docs-deploy
-
-Deploy the documentation site.
 
 
 ### docs-serve
@@ -129,6 +124,31 @@ A command may have an optional json dictionary for parameters.
 Lint all files in the repo.
 
 Just run pre-commit hooks and mypy on all files.
+
+
+### publish
+
+Build and publish the package.
+
+This script is tailored to the following workflow:
+
+- `main` branch is the development branch.
+- once a tag is pushed, that tag is deployed.
+
+#### Rules
+
+- format supported: `N.N.N*[{a|b|rc}N]`.
+- tag and package version mismatch: error.
+- version already exist: error.
+- pre-release, is last version, unstable major: deploy.
+- pre-release, other cases: deploy without docs.
+- is last version: deploy and update latest alias.
+- otherwise: deploy.
+
+#### Notes
+
+A `major` is considered unstable if it doesn't have releases (pre-releases do
+not count).
 
 
 ### test
