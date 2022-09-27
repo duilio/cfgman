@@ -9,7 +9,6 @@ See [below](#how-to-change-this-file) if you want to change it.
 
 This is the list of the available commands:
 
-- `scripts/docs-build`: Build the documentation site.
 - `scripts/docs-serve`: Start the local server for the doc site.
 - `scripts/format-md-codeblocks`: Format python code blocks in markdown files using
   black.
@@ -20,14 +19,11 @@ This is the list of the available commands:
 
 ## Reference
 
-### docs-build
-
-Build the documentation site.
-
-
 ### docs-serve
 
 Start the local server for the doc site.
+
+It only serves the current doc version, ignoring the rest.
 
 
 ### format-md-codeblocks
