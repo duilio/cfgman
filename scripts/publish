@@ -4,17 +4,35 @@
 This script is tailored to the following workflow:
 
 - `main` branch is the development branch.
-- once a tag is pushed, that tag is deployed.
+- once a tag is pushed, that tag is published.
+
+Publish means:
+
+- Build the package.
+- Build the doc.
+- Create a new release on Github.
+- Publish the package to PyPI.
+
+This script requires a toml parser, this mean that you'd probably need to run
+it from the virtual environment using poetry:
+
+```console
+$ poetry run ./scripts/publish [options] ...
+```
+
+# Formats
+
+- **Version**: `N.N.N[{a|b|rc}N]` e.g `0.1.1` or `1.0.0rc1`.
+- **Tag**: `v(version)` (e.g. `v1.0.0a2`)
 
 # Rules
 
-- format supported: `N.N.N*[{a|b|rc}N]`.
-- tag and package version mismatch: error.
-- version already exist: error.
-- pre-release, is last version, unstable major: deploy.
-- pre-release, other cases: deploy without docs.
-- is last version: deploy and update latest alias.
-- otherwise: deploy.
+- Tag and package version mismatch: error.
+- Version already published: error.
+- Pre-release, last version and unstable major: deploy.
+- Pre-release, other cases: deploy without docs.
+- Last version: deploy and update latest alias.
+- Otherwise: deploy.
 
 # Notes
 

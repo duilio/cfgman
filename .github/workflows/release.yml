@@ -3,7 +3,10 @@ name: Release
 on:
   push:
     tags:
-      - "*.*.*"
+      - "v*.*.*"
+
+permissions:
+  contents: write # publishing releases
 
 jobs:
   release:
@@ -17,11 +20,15 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Check Version
-        id: check-version
+      - name: Get full Python version
+        id: full-python-version
         run: |
-          [[ "$(poetry version --short)" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
-            || echo ::set-output name=prerelease::true
+          echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
+
+      - name: Get tag name
+        id: tag
+        run: |
+          echo "::set-output name=tag-name::${GITHUB_REF#refs/tags/}"
 
       - name: Install and configure Poetry
         uses: snok/install-poetry@v1
@@ -29,19 +36,25 @@ jobs:
           version: 1.2.0
           virtualenvs-in-project: true
 
+      - name: Set up cache for python dependencies
+        uses: actions/cache@v3
+        id: cache-venv
+        with:
+          path: .venv
+          key: pydeps-release-Ubuntu-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Ensure cache is healthy
+        if: steps.cache-venv.outputs.cache-hit == 'true'
+        run: timeout 10s poetry run pip --version || rm -rf .venv
+
+      - name: Install dependencies
+        run: poetry install --only main --only docs --only dev -vvv
+
       - name: Build package
         run: poetry build
 
-      - name: Publish to PyPI
+      - name: Create release and publish
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
-        run: poetry publish
-
-      - name: Create Release
-        id: create_release
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: "dist/*"
-          token: ${{ secrets.GITHUB_TOKEN }}
-          draft: false
-          prerelease: steps.check-version.outputs.prerelease == 'true'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: poetry run ./scripts/publish "${{ steps.tag.outputs.tag-name }}"
