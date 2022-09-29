@@ -86,7 +86,12 @@ class Version(NamedTuple):
         """Return the title for the doc of this version.
 
         E.g. `{major}.X`.
+
+        When `major` is `0` then the full version is returned as a string.
+
         """
+        if self.major == 0:
+            return str(self)
         return f"{self.major}.X"
 
 
@@ -288,7 +293,7 @@ def publish(
     def cmd_run(args: list[str]) -> None:
         print(f"Run: {' '.join(args)}")
         if not dry_run:
-            subprocess.check_call(args, env=os.environ, cwd=ROOT, shell=True)
+            subprocess.check_call(args, env=os.environ, cwd=ROOT)
 
     # Build the package.
     poetry_build_command = ["poetry", "build"]
