@@ -16,10 +16,12 @@ TBD.
    ```console
    $ git tag "v$(poetry version --short)" && git push --tags
    ```
-5. Wait for the `release` workflow to finish.
+5. Wait for the [`release` workflow][1] to finish.
 6. Edit the release note manually on Github for the just created release.
 
 TODO:
 
 - Add `CHANGELOG` ?
 - We might automate the tag creation once the a new version land in the main branch.
+
+[1]: https://github.com/duilio/cfgman/actions/workflows/release.yml
