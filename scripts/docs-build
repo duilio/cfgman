@@ -2,6 +2,13 @@
 #
 # Build the documentation site.
 #
+# This script should be used only for testing purposes. (e.g. checking the doc
+# can actually be built) The resulting doc ignores the versions already
+# published and doesn't allow to navigate through them.
+#
+# The actual build of the documentation for release purposes is left to the
+# `publish` script.
+#
 set -xeuo pipefail
 
 ROOT="$(dirname "$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )")"

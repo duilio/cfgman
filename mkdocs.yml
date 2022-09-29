@@ -15,6 +15,7 @@ theme:
   name: material
   icon:
     logo: material/cog
+  custom_dir: docs/overrides
 
 plugins:
   - search
@@ -26,6 +27,8 @@ plugins:
             - https://docs.python.org/3/objects.inv
           options:
             show_source: false
+  - mike:
+      version_selector: true
 
 markdown_extensions:
   - admonition
@@ -33,3 +36,7 @@ markdown_extensions:
   - pymdownx.superfences
   - toc:
       permalink: true
+
+extra:
+  version:
+    provider: mike

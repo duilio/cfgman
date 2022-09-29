@@ -45,11 +45,5 @@ jobs:
         run: poetry install --only main --only docs -vvv
 
       - name: Build docs
-        if: github.event_name != 'push'
         run: |
           ./scripts/docs-build
-
-      - name: Deploy docs
-        if: github.event_name == 'push'
-        run: |
-          ./scripts/docs-deploy

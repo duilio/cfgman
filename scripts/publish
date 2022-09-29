@@ -1,0 +1,409 @@
+#!/usr/bin/env python
+"""Build and publish the package.
+
+This script is tailored to the following workflow:
+
+- `main` branch is the development branch.
+- once a tag is pushed, that tag is published.
+
+Publish means:
+
+- Build the package.
+- Build the doc.
+- Create a new release on Github.
+- Publish the package to PyPI.
+
+This script requires a toml parser, this mean that you'd probably need to run
+it from the virtual environment using poetry:
+
+```console
+$ poetry run ./scripts/publish [options] ...
+```
+
+# Formats
+
+- **Version**: `N.N.N[{a|b|rc}N]` e.g `0.1.1` or `1.0.0rc1`.
+- **Tag**: `v(version)` (e.g. `v1.0.0a2`)
+
+# Rules
+
+- Tag and package version mismatch: error.
+- Version already published: error.
+- Pre-release, last version and unstable major: deploy.
+- Pre-release, other cases: deploy without docs.
+- Last version: deploy and update latest alias.
+- Otherwise: deploy.
+
+# Notes
+
+A `major` is considered unstable if it doesn't have releases (pre-releases do
+not count).
+
+"""
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import textwrap
+import urllib.request
+from pathlib import Path
+from typing import NamedTuple, NoReturn
+
+import tomli
+
+ROOT = Path(__file__).parent.parent
+
+
+class Version(NamedTuple):
+    """Parsed version object.
+
+    Attributes:
+        major: major version.
+        minor: minor version.
+        patch: patch version.
+        prerelease_type: `"a"`, `"b"`, `"rc`" or empty string.
+        prerelease_id: prerelease number or `None` if it is not a prerelease.
+    """
+
+    major: int
+    minor: int
+    patch: int
+    prerelease_type: str
+    prerelease_id: int | None
+
+    def __str__(self) -> str:
+        major, minor, patch, prerelease_type, prerelease_id = self
+        if prerelease_type:
+            return f"{major}.{minor}.{patch}{prerelease_type}{prerelease_id}"
+        else:
+            return f"{major}.{minor}.{patch}"
+
+    @property
+    def title(self) -> str:
+        """Return the title for the doc of this version.
+
+        E.g. `{major}.X`.
+        """
+        return f"{self.major}.X"
+
+
+class PackageInfo(NamedTuple):
+    """Python package information.
+
+    Attributes:
+        name: package name.
+        version: the version of the package.
+    """
+
+    name: str
+    version: Version
+
+
+class PackageVersionInfo(NamedTuple):
+    """Version info compared to the other versions of the package.
+
+    Attributes:
+        is_last: this would be the last version of the package.
+        is_new: this version does not exist in the package.
+        is_major_unstable: this major doesn't have any stable releases.
+
+    Note:
+        A stable release is any release that is not a pre-release.
+    """
+
+    is_last: bool
+    is_new: bool
+    is_major_unstable: bool
+
+
+PRERELEASE_TYPE_SORT_ORDER = {
+    "a": 0,
+    "b": 1,
+    "rc": 2,
+    "": 3,
+}
+
+
+def version_sort_key(version: Version) -> tuple[int, int, int, int, int]:
+    """Utility function to extract a sortable key from a [`Version`][Version].
+
+    Use this function as the `key` argument of `list.sort` or `sorted`.
+    """
+    return (
+        version.major,
+        version.minor,
+        version.patch,
+        PRERELEASE_TYPE_SORT_ORDER[version.prerelease_type],
+        version.prerelease_id or 0,
+    )
+
+
+def parse_version(version: str) -> Version:
+    """Parse a version following our only supported format.
+
+    If the format is not compliant, then it raises an error.
+
+    The format is compatible with [PEP-440][1] but it is stricter:
+
+    - major.minor.patch numbers are all required.
+    - no dev and post releases.
+    - no epochs and no local identifiers.
+    - no pre-release separators.
+    - no implicit numbers.
+
+    [1]: https://peps.python.org/pep-0440/
+
+    Args:
+        version: the version as a string.
+
+    Returns:
+        A [`Version`][Version] object.
+    """
+    m = re.match(
+        r"""
+        (?P<major>[0-9]+)\.(?P<minor>[0-9]+)\.(?P<patch>[0-9]+)
+
+        # optional part with the pre-release type and number
+        (?:
+            (?P<prerelease_type>a|b|rc)
+            (?P<prerelease_id>[0-9]+)
+        )?
+        """,
+        version,
+        re.VERBOSE,
+    )
+
+    if m is None:
+        raise ValueError("Invalid version string")
+
+    major = int(m.group("major"))
+    minor = int(m.group("minor"))
+    patch = int(m.group("patch"))
+
+    if prerelease_type := m.group("prerelease_type") or "":
+        prerelease_id = int(m.group("prerelease_id"))
+    else:
+        prerelease_id = None
+
+    assert isinstance(prerelease_type, str)
+    return Version(major, minor, patch, prerelease_type, prerelease_id)
+
+
+def get_package_info() -> PackageInfo:
+    """Get the package info from `pyproject.toml`.
+
+    Returns:
+        An object containing the package info.
+    """
+    pyproject_path = ROOT / "pyproject.toml"
+    with open(pyproject_path) as fin:
+        pyproject_content = tomli.loads(fin.read())
+
+    name = pyproject_content["tool"]["poetry"]["name"]
+    version = pyproject_content["tool"]["poetry"]["version"]
+
+    assert isinstance(name, str)
+    assert isinstance(version, str)
+
+    return PackageInfo(name, parse_version(version))
+
+
+def get_package_version_info(
+    package_name: str, current_version: Version
+) -> PackageVersionInfo:
+    """Get the information of the given version against the package releases.
+
+    The package releases on pypi are used to check how this version would fit
+    in the world.
+
+    Note:
+        It requires an internet connection to fetch the releases from pypi.
+
+    Args:
+        package_name: the package name for pypi.
+        current_version: the current version of the code.
+    Returns:
+        The version info related to the package.
+    """
+    with urllib.request.urlopen(f"https://pypi.org/pypi/{package_name}/json") as fin:
+        pkg = json.load(fin)
+
+    all_versions = []
+    for v in pkg["releases"].keys():
+        try:
+            all_versions.append(parse_version(v))
+        except ValueError:
+            pass
+
+    all_versions.sort(key=version_sort_key, reverse=True)
+
+    if not all_versions:
+        return PackageVersionInfo(is_last=True, is_new=True, is_major_unstable=True)
+
+    is_new = current_version not in all_versions
+    is_last = current_version > all_versions[0]
+
+    filtered_versions = [x for x in all_versions if x.major == current_version.major]
+    is_major_unstable = all(bool(x.prerelease_type) for x in filtered_versions)
+
+    return PackageVersionInfo(
+        is_last=is_last, is_new=is_new, is_major_unstable=is_major_unstable
+    )
+
+
+def error(message: str, *, ansi: bool = True, exit_code: int = 1) -> NoReturn:
+    """Print an error message and quit.
+
+    Args:
+        message: the message to print.
+        ansi: print colored text using ansi.
+        exit_code: the exit code.
+    """
+    RED = "\033[91m" if ansi else ""
+    END = "\033[0m" if ansi else ""
+
+    print(f"{RED}{message}{END}", file=sys.stderr)
+    sys.exit(exit_code)
+
+
+def publish(
+    package_name: str,
+    version: Version,
+    deploy_doc: bool = True,
+    doc_alias: str = "",
+    dry_run: bool = False,
+) -> None:
+    """Publish the package on pypi and deploy the doc.
+
+    Args:
+        package_name: name of the package for pypi.
+        version: the version of the package.
+        deploy_doc: enable/disable doc deployment.
+        doc_alias: alias for the doc to update.
+    """
+
+    def cmd_run(args: list[str]) -> None:
+        print(f"Run: {' '.join(args)}")
+        if not dry_run:
+            subprocess.check_call(args, env=os.environ, cwd=ROOT)
+
+    # Build the package.
+    poetry_build_command = ["poetry", "build"]
+    cmd_run(poetry_build_command)
+
+    # Generate the GH release with `gh` cli.
+    gh_command = ["gh", "release", "create", f"v{version}", "--generate-notes"]
+    if version.prerelease_type:
+        gh_command.append("--prerelease")
+    gh_command.append("dist/*")
+
+    cmd_run(gh_command)
+
+    # Publish the package on pypi with poetry.
+    poetry_publish_command = ["poetry", "publish"]
+    cmd_run(poetry_publish_command)
+
+    # Publish the documentation with mike.
+    if not deploy_doc:
+        return
+
+    mike_command = [
+        "mike",
+        "deploy",
+        "--push",
+        "-u",
+        "-t",
+        f"{version.title}",
+        f"{version}",
+    ]
+    if sys.base_prefix == sys.prefix:
+        # we are not in a virtualenv, assume we need it to run `mike`.
+        mike_command = [
+            "poetry",
+            "run",
+            "--",
+        ] + mike_command
+
+    if doc_alias:
+        mike_command.append(doc_alias)
+    cmd_run(mike_command)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tag", metavar="TAG", help="The current tag name.")
+    parser.add_argument(
+        "--no-color",
+        dest="color",
+        default=True,
+        action="store_false",
+        help="Disable text color.",
+    )
+    parser.add_argument(
+        "--dry-run", default=False, action="store_true", help="Enable dry-run."
+    )
+    args = parser.parse_args()
+
+    ansi = args.color and sys.stderr.isatty() and sys.stdout.isatty()
+
+    BW = "\033[37;1m"
+    END = "\033[0m"
+    if not ansi:
+        BW = ""
+        END = ""
+
+    tag = args.tag
+    if tag[0] != "v":
+        error(f'Invalid tag {tag}, must be "vN.N.N*[{{a|b|rc}}N]".', ansi=ansi)
+
+    tag_version = parse_version(args.tag[1:])
+    package_name, version = get_package_info()
+    is_prerelease = bool(version.prerelease_type)
+
+    def yesno(x: bool) -> str:
+        return "yes" if x else "no"
+
+    print(
+        textwrap.dedent(
+            f"""\
+            Package Name: {BW}{package_name}{END}
+            Version: {BW}{version}{END}
+            Prerelease: {BW}{yesno(is_prerelease)}{END}
+            """
+        )
+    )
+
+    if tag_version != version:
+        error("Tag and package version don't match.", ansi=ansi)
+
+    is_last_version, is_new_version, is_major_unstable = get_package_version_info(
+        package_name, version
+    )
+
+    print(
+        textwrap.dedent(
+            f"""\
+            Last Version: {BW}{yesno(is_last_version)}{END}
+            New Version: {BW}{yesno(is_new_version)}{END}
+            Unstable Major: {BW}{yesno(is_new_version)}{END}
+            """
+        )
+    )
+
+    if not is_new_version:
+        error(f"Version already published ({version}).", ansi=ansi)
+
+    if is_prerelease and is_last_version and is_major_unstable:
+        return publish(package_name, version, dry_run=args.dry_run)
+    elif is_prerelease:
+        return publish(package_name, version, deploy_doc=False, dry_run=args.dry_run)
+    elif is_last_version:
+        return publish(package_name, version, doc_alias="latest", dry_run=args.dry_run)
+    else:
+        return publish(package_name, version, dry_run=args.dry_run)
+
+
+if __name__ == "__main__":
+    main()

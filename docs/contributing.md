@@ -9,13 +9,15 @@ TBD.
    ```console
    $ poetry version patch
    ```
-   We do follow semver, so use the appropriate string instead of patch to increment the version (e.g. `minor`, `major`, `prerelease`)
+   We do follow semver, so use the appropriate string instead of `"patch"` to
+   increment the version (e.g. `minor`, `major`, `prerelease`)
 3. Push the new branch and open a PR.
-4. Once merged, create a new tag:
+4. Once merged, create a new tag :
    ```console
-   $ git tag x.y.z && git push --tags
+   $ git tag "v$(poetry version --short)" && git push --tags
    ```
-5. Edit the new release created by Github
+5. Wait for the `release` workflow to finish.
+6. Edit the release note manually on Github for the just created release.
 
 TODO:
 

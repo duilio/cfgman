@@ -10,12 +10,12 @@ See [below](#how-to-change-this-file) if you want to change it.
 This is the list of the available commands:
 
 - `scripts/docs-build`: Build the documentation site.
-- `scripts/docs-deploy`: Deploy the documentation site.
 - `scripts/docs-serve`: Start the local server for the doc site.
 - `scripts/format-md-codeblocks`: Format python code blocks in markdown files using
   black.
-- `scripts/generate_readme`: Generate the `README.md` for the `scripts/` folder.
+- `scripts/generate-readme`: Generate the `README.md` for the `scripts/` folder.
 - `scripts/lint`: Lint all files in the repo.
+- `scripts/publish`: Build and publish the package.
 - `scripts/test`: Run all tests.
 
 ## Reference
@@ -24,15 +24,19 @@ This is the list of the available commands:
 
 Build the documentation site.
 
+This script should be used only for testing purposes. (e.g. checking the doc
+can actually be built) The resulting doc ignores the versions already
+published and doesn't allow to navigate through them.
 
-### docs-deploy
-
-Deploy the documentation site.
+The actual build of the documentation for release purposes is left to the
+`publish` script.
 
 
 ### docs-serve
 
 Start the local server for the doc site.
+
+It only serves the current doc version, ignoring the rest.
 
 
 ### format-md-codeblocks
@@ -72,7 +76,7 @@ want to include hidden paths or files with other suffixes, just name them
 explicitly.
 
 
-### generate_readme
+### generate-readme
 
 Generate the `README.md` for the `scripts/` folder.
 
@@ -129,6 +133,49 @@ A command may have an optional json dictionary for parameters.
 Lint all files in the repo.
 
 Just run pre-commit hooks and mypy on all files.
+
+
+### publish
+
+Build and publish the package.
+
+This script is tailored to the following workflow:
+
+- `main` branch is the development branch.
+- once a tag is pushed, that tag is published.
+
+Publish means:
+
+- Build the package.
+- Build the doc.
+- Create a new release on Github.
+- Publish the package to PyPI.
+
+This script requires a toml parser, this mean that you'd probably need to run
+it from the virtual environment using poetry:
+
+```console
+$ poetry run ./scripts/publish [options] ...
+```
+
+#### Formats
+
+- **Version**: `N.N.N[{a|b|rc}N]` e.g `0.1.1` or `1.0.0rc1`.
+- **Tag**: `v(version)` (e.g. `v1.0.0a2`)
+
+#### Rules
+
+- Tag and package version mismatch: error.
+- Version already published: error.
+- Pre-release, last version and unstable major: deploy.
+- Pre-release, other cases: deploy without docs.
+- Last version: deploy and update latest alias.
+- Otherwise: deploy.
+
+#### Notes
+
+A `major` is considered unstable if it doesn't have releases (pre-releases do
+not count).
 
 
 ### test

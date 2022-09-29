@@ -1,9 +1,0 @@
-#!/bin/bash
-#
-# Deploy the documentation site.
-#
-set -xeuo pipefail
-
-ROOT="$(dirname "$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )")"
-
-(cd "$ROOT"; poetry run mkdocs gh-deploy --force)
