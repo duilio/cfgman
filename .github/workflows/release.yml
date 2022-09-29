@@ -13,7 +13,11 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
+      # NOTE: we don't need the full history, but at the moment is not such a waste.
+      # What we want is just to fetch the `gh-pages` branch required by `mike`.
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -52,6 +56,11 @@ jobs:
 
       - name: Build package
         run: poetry build
+
+      - name: Set git user
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
 
       - name: Create release and publish
         env:
