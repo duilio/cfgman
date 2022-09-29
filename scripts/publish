@@ -293,8 +293,8 @@ def publish(
     poetry_build_command = ["poetry", "build"]
     cmd_run(poetry_build_command)
 
-    # Generate the GH release (TODO: release notes) with `gh` cli.
-    gh_command = ["gh", "release", "create", f"v{version}"]
+    # Generate the GH release with `gh` cli.
+    gh_command = ["gh", "release", "create", f"v{version}", "--generate-notes"]
     if version.prerelease_type:
         gh_command.append("--prerelease")
     gh_command.append("dist/*")
