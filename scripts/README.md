@@ -9,6 +9,7 @@ See [below](#how-to-change-this-file) if you want to change it.
 
 This is the list of the available commands:
 
+- `scripts/docs-build`: Build the documentation site.
 - `scripts/docs-serve`: Start the local server for the doc site.
 - `scripts/format-md-codeblocks`: Format python code blocks in markdown files using
   black.
@@ -18,6 +19,18 @@ This is the list of the available commands:
 - `scripts/test`: Run all tests.
 
 ## Reference
+
+### docs-build
+
+Build the documentation site.
+
+This script should be used only for testing purposes. (e.g. checking the doc
+can actually be built) The resulting doc ignores the versions already
+published and doesn't allow to navigate through them.
+
+The actual build of the documentation for release purposes is left to the
+`publish` script.
+
 
 ### docs-serve
 
