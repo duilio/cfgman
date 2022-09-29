@@ -86,7 +86,12 @@ class Version(NamedTuple):
         """Return the title for the doc of this version.
 
         E.g. `{major}.X`.
+
+        When `major` is `0` then the full version is returned as a string.
+
         """
+        if self.major == 0:
+            return str(self)
         return f"{self.major}.X"
 
 
