@@ -288,7 +288,7 @@ def publish(
     def cmd_run(args: list[str]) -> None:
         print(f"Run: {' '.join(args)}")
         if not dry_run:
-            subprocess.check_call(args, env=os.environ, cwd=ROOT, shell=True)
+            subprocess.check_call(args, env=os.environ, cwd=ROOT)
 
     # Build the package.
     poetry_build_command = ["poetry", "build"]
