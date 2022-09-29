@@ -9,6 +9,7 @@ nav:
   - API Reference:
       - cfgman: api/cfgman.md
       - loaders: api/loaders.md
+  - Release Notes: https://github.com/duilio/cfgman/releases
   - How to contribute: contributing.md
 
 theme:
