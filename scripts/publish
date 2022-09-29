@@ -41,6 +41,7 @@ not count).
 
 """
 import argparse
+import itertools
 import json
 import os
 import re
@@ -287,7 +288,7 @@ def publish(
     def cmd_run(args: list[str]) -> None:
         print(f"Run: {' '.join(args)}")
         if not dry_run:
-            subprocess.check_call(args, env=os.environ, cwd=ROOT)
+            subprocess.check_call(args, env=os.environ, cwd=ROOT, shell=True)
 
     # Build the package.
     poetry_build_command = ["poetry", "build"]
@@ -297,7 +298,13 @@ def publish(
     gh_command = ["gh", "release", "create", f"v{version}", "--generate-notes"]
     if version.prerelease_type:
         gh_command.append("--prerelease")
-    gh_command.append("dist/*")
+
+    # NOTE: we cannot use shell's wildcard because we are not running the
+    # subprocess in a shell. We also need to have path relative to the CWD of
+    # the gh command which is `ROOT`.
+    dist_files = (ROOT / "dist").glob("*")
+    files = itertools.chain(dist_files, [ROOT / "LICENSE"])
+    gh_command.extend(str(x.relative_to(ROOT)) for x in files)
 
     cmd_run(gh_command)
 
